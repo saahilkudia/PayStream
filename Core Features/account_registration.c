@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 int main(){
-    printf("This is test code of github push!!!");
-
+    printf("My name is Muhammad Saahil");
     return 0;
 }
