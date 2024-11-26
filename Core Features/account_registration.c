@@ -1,56 +1,53 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <strings.h>
+#include <time.h>
 
 typedef struct{
-    char username[50];
-    char password[50];
-    char email[100];
+    int accountNumber;
+    char name[50];
+    char email[50];
+    char accountType[10];
+    char password[20];
     double balance;
 } Account;
 
-void saveAccount(Account acc){
-    FILE *file = fopen("accounts.dat", "a");
+//function to create random account number of new user
 
-    if (file == NULL){
-        printf("Error Opening File \n");
+int genAccountNum(){
+    return 1000 + rand() %900000;  //random six number using rand and ensuring that we always get six number
+}
+
+//function to create newAccounts
+void createAccount(){
+    Account newAccount;
+    FILE *file = fopen("account.dat", "ab");
+    if(file == NULL){
+        printf("Error opening the file!!!");
         return;
     }
 
-    fwrite(&acc, sizeof(Account), 1, file);
-    fclose(file);
-}
+    newAccount.accountNumber = generateAccountNumber();
+    printf("Account Number Generate %d\n", newAccount.accountNumber);
 
-//New account registration function
+    printf("Enter your Full Name: ");
+    getchar();
+    fgets(newAccount.name, 50, stdin);
+    strtok(newAccount.name, "\n");
 
-void registerAccount(){
-    Account newAccount; //The values taken from the user will be placed in the newAccount Variable
+    printf("Enter your E-mail");
+    fgets(newAccount.email, 50, stdin);
+    strtok(newAccount.email, "\n");
 
-    printf("Enter your Username: \n");
-    scanf("%s", newAccount.username);
-    printf("Enter your Password: \n");
+    printf("Enter account type (Savings/Current): ");
+    scanf("%s", newAccount.accountType);
+
+    printf("Enter initial balance to deposit: ");
+    scanf("%.1f", &newAccount.balance);
+
+    printf("Set your password (max 20 characters)");
     scanf("%s", newAccount.password);
-    printf("Enter your E-mail:\n");
-    scanf("%s", newAccount.email);
 
-    newAccount.balance = 0.0;
-    saveAccount(newAccount);
-
-    printf("Account Created Successfully!!!");
-}
-
-int main(){
-    int choice;
-
-    printf("Welcome to Paystream \n");
-    printf("1. Register your account \n");
-    printf("Enter your choice \n");
-    scanf("%d", &choice);
-
-    if(choice == 1){
-        registerAccount();
-    } else{
-        printf("Invalid Choice \n");
-        return 0;
-    }
+    fwrite(&newAccount, sizeof(Account), 1, file);
+    fclose(file);
 }
