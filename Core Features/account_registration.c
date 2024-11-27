@@ -50,4 +50,6 @@ void createAccount(){
 
     fwrite(&newAccount, sizeof(Account), 1, file);
     fclose(file);
+
+    printf("My name is Muhammad Saahil");
 }
