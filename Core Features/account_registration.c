@@ -19,7 +19,7 @@ int genAccountNum(){
 }
 
 //function to create newAccounts
-void createAccount()///{
+void createAccount(){
     Account newAccount;
     FILE *file = fopen("account.dat", "ab");
     if(file == NULL){
