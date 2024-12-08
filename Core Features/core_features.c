@@ -15,13 +15,13 @@ typedef struct{
 //function to create random account number of new user
 
 int generateAccountNumber(){
-    return 1000 + rand() %900000;  //random six number using rand and ensuring that we always get six number
+    return 100000 + rand() %900000;  //random six number using rand and ensuring that we always get six number
 }
 
 //function to create newAccounts
 void createAccount(){
     Account newAccount;
-    FILE *file = fopen("account.dat", "ab");
+    FILE *file = fopen("accounts.dat", "ab");
     if(file == NULL){
         printf("Error opening the file!!!");
         return;
@@ -136,7 +136,7 @@ void viewAccount(){
         return;
     }
 
-    FILE *file = fopen("account.dat", "rb");
+    FILE *file = fopen("accounts.dat", "rb");
     if(file == NULL){
         printf("Enter opening file!!\n");
     }
