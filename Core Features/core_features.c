@@ -18,6 +18,23 @@ int generateAccountNumber(){
     return 100000 + rand() %900000;  //random six number using rand and ensuring that we always get six number
 }
 
+//function to check whether the account exsist or not
+int doesAccountExist(int accountNumber){
+    FILE *file = fopen("accounts.dat", "rb");
+    if(file == NULL){
+        return 0;
+    }
+
+    Account acc;
+    while (fread(&acc, sizeof(Account), 1, file)){
+        if(acc.accountNumber == accountNumber){
+            return 1;
+        }
+    }
+    fclose(file);
+    return 0;
+}
+
 //function to create newAccounts
 void createAccount(){
     Account newAccount;
@@ -27,23 +44,36 @@ void createAccount(){
         return;
     }
 
-    newAccount.accountNumber = generateAccountNumber();
-    printf("Account Number Generate %d\n", newAccount.accountNumber);
+    do{
+        newAccount.accountNumber = generateAccountNumber();
+    } while(doesAccountExist(newAccount.accountNumber));
+
+    printf("Account Number Generated %d\n", newAccount.accountNumber);
 
     printf("Enter your Full Name: ");
     getchar();
     fgets(newAccount.name, 50, stdin);
     strtok(newAccount.name, "\n");
 
-    printf("Enter your E-mail");
+    printf("Enter your E-mail: ");
     fgets(newAccount.email, 50, stdin);
     strtok(newAccount.email, "\n");
 
     printf("Enter account type (Savings/Current): ");
     scanf("%s", newAccount.accountType);
+    if(strcmp(newAccount.accountType, "Savings") != 0 && strcmp(newAccount.accountType, "Current") != 0){
+        printf("Invalid Account Type use Savings or Courrent. \n");
+        fclose(file);
+        return;
+    }
 
     printf("Enter initial balance to deposit: ");
-    scanf("%.1f", &newAccount.balance);
+    scanf("%.1f", &newAccount.balance, "\n");
+    if(newAccount.balance < 0){
+        printf("Initial Balance cannot be negetive");
+        fclose(file);
+        return;
+    }
 
     printf("Set your password (max 20 characters)");
     scanf("%s", newAccount.password);
