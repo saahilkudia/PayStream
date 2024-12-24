@@ -3,7 +3,8 @@
 #include <string.h>
 #include <time.h>
 
-typedef struct{
+// Structure definition for Account
+typedef struct {
     int accountNumber;
     char name[50];
     char email[50];
@@ -12,17 +13,19 @@ typedef struct{
     double balance;
 } Account;
 
-int generateNum(){
-    return 100000 + rand() % 900000; //Random Number Generator
+// Function to generate a random account number
+int generateNum() {
+    return 100000 + rand() % 900000;
 }
 
-int doesAccountExsist(int accountNumber){
+// Function to check if an account already exists
+int doesAccountExist(int accountNumber) {
     FILE *file = fopen("accounts.dat", "rb");
-    if(!file) return 0;
+    if (!file) return 0;
 
     Account acc;
-    while(fread(&acc, sizeof(Account), 1, file)){
-        if(acc.accountNumber == accountNumber){
+    while (fread(&acc, sizeof(Account), 1, file)) {
+        if (acc.accountNumber == accountNumber) {
             fclose(file);
             return 1;
         }
@@ -31,62 +34,70 @@ int doesAccountExsist(int accountNumber){
     return 0;
 }
 
-void getAccountDetails(Account *newAccount){
+// Function to get account details from the user
+void getAccountDetails(Account *newAccount) {
     printf("Enter your Full Name: ");
-    getchar(); fgets(newAccount -> name, 50, stdin); strtok(newAccount -> name, "\n");
+    getchar(); // Clear the buffer
+    fgets(newAccount->name, 50, stdin);
+    strtok(newAccount->name, "\n"); 
 
     printf("Enter your E-mail: ");
-    getchar(); fgets(newAccount -> email, 50, stdin); strtok(newAccount -> email, "\n");
+    fgets(newAccount->email, 50, stdin);
+    strtok(newAccount->email, "\n"); 
 
     printf("Enter Account Type: ");
-    scanf("%s", newAccount -> accountType);
+    scanf("%s", newAccount->accountType);
 
     printf("Enter your initial balance: ");
     scanf("%lf", &newAccount->balance);
-    getchar(); // Clear the buffer again
 
     printf("Enter your Password: ");
-    getchar(); // Clear buffer from previous input
+    getchar();
     fgets(newAccount->password, 20, stdin);
-    strtok(newAccount->password, "\n");
+    strtok(newAccount->password, "\n"); 
 }
 
-void createAccount(){
+// Function to create an account
+void createAccount() {
     Account newAccount;
     FILE *file = fopen("accounts.dat", "ab");
-    if(!file){
-        printf("Error Opening File");
+    if (!file) {
+        printf("Error Opening File\n");
         return;
     }
 
-    do{
+    // Generate a unique account number
+    do {
         newAccount.accountNumber = generateNum();
-    } while(doesAccountExsist(newAccount.accountNumber));
+    } while (doesAccountExist(newAccount.accountNumber));
 
     printf("Account Number Generated: %d\n", newAccount.accountNumber);
-    getAccountDetails(&newAccount); //stroring in the above function
+    getAccountDetails(&newAccount);
 
-    if(newAccount.balance < 0){
-        printf("Balance cannot be negetive\n");
+    // Validate balance
+    if (newAccount.balance < 0) {
+        printf("Balance cannot be negative\n");
         fclose(file);
         return;
     }
 
+    // Write account data to file
     fwrite(&newAccount, sizeof(Account), 1, file);
     fclose(file);
     printf("Account Created Successfully!!\n");
 }
 
-int authenticateUser(int accountNumber, char *enteredPassword){
+// Function to authenticate a user
+int authenticateUser(int accountNumber, char *enteredPassword) {
     FILE *file = fopen("accounts.dat", "rb");
-    if(!file){
+    if (!file) {
         printf("Error opening file!!!\n");
         return 0;
     }
 
     Account acc;
-    while(fread(&acc, sizeof(Account), 1, file)){
-        if(acc.accountNumber == accountNumber && strcmp(acc.password, enteredPassword) == 0){
+    while (fread(&acc, sizeof(Account), 1, file)) {
+        if (acc.accountNumber == accountNumber && strcmp(acc.password, enteredPassword) == 0) {
             fclose(file);
             return 1;
         }
@@ -95,32 +106,33 @@ int authenticateUser(int accountNumber, char *enteredPassword){
     return 0;
 }
 
-void deleteAccount(){
+// Function to delete an account
+void deleteAccount() {
     int accountNumber;
     char password[20];
-    printf("Enter the Account NUmber to Delete: \n");
+    printf("Enter the Account Number to Delete: \n");
     scanf("%d", &accountNumber);
     printf("Enter the Password: \n");
     scanf("%s", password);
 
-    if(!authenticateUser(accountNumber, password)){
-        printf("Authentication Failed");
+    if (!authenticateUser(accountNumber, password)) {
+        printf("Authentication Failed\n");
         return;
     }
 
     FILE *file = fopen("accounts.dat", "rb");
     FILE *temp = fopen("temp.dat", "wb");
-    if(!file || !temp){
-        printf("Enter opening file!!\n");
+    if (!file || !temp) {
+        printf("Error opening file!!\n");
         return;
     }
 
     Account acc;
     int found = 0;
-    while(fread(&acc, sizeof(Account), 1, file)){
-        if(acc.accountNumber != accountNumber){
+    while (fread(&acc, sizeof(Account), 1, file)) {
+        if (acc.accountNumber != accountNumber) {
             fwrite(&acc, sizeof(Account), 1, temp);
-        } else{
+        } else {
             found = 1;
         }
     }
@@ -130,14 +142,15 @@ void deleteAccount(){
     remove("accounts.dat");
     rename("temp.dat", "accounts.dat");
 
-    if(found){
+    if (found) {
         printf("Account Deleted Successfully!!\n");
-    } else{
+    } else {
         printf("Account not found\n");
     }
 }
 
-void viewAccount(){
+// Function to view account details
+void viewAccount() {
     int accountNumber;
     char password[20];
     printf("Enter Account Number: ");
@@ -145,97 +158,100 @@ void viewAccount(){
     printf("Enter Password: ");
     scanf("%s", password);
 
-    if(!authenticateUser(accountNumber, password)){
+    if (!authenticateUser(accountNumber, password)) {
         printf("Authentication Failed!!!\n");
         return;
     }
 
     FILE *file = fopen("accounts.dat", "rb");
-    if(!file){
+    if (!file) {
         printf("Error Opening File!!!\n");
         return;
     }
 
     Account acc;
     int found = 0;
-    while(fread(&acc, sizeof(Account), 1, file)){
-        if(acc.accountNumber == accountNumber){
+    while (fread(&acc, sizeof(Account), 1, file)) {
+        if (acc.accountNumber == accountNumber) {
             printf("Account No: %d\n", acc.accountNumber);
             printf("Name: %s\n", acc.name);
             printf("Email: %s\n", acc.email);
             printf("Account Type: %s\n", acc.accountType);
-            printf("Balance %2lf\n", acc.balance);
-            found = 1;
+            printf("Balance: %.2lf\n", acc.balance);
+            found = 1; // Account found
             break;
         }
     }
     fclose(file);
-    if (!found){
+    if (!found) {
         printf("Account not Found!!\n");
     }
 }
 
-void updateAccount(){
+// Function to update account details
+void updateAccount() {
     int accountNumber;
     char password[20];
     printf("Enter Account Number to Update: ");
     scanf("%d", &accountNumber);
-    printf("Enter Passowrd: ");
+    printf("Enter Password: ");
     scanf("%s", password);
 
-    if(!authenticateUser(accountNumber, password)){
+    if (!authenticateUser(accountNumber, password)) {
         printf("Authentication Failed!!\n");
         return;
     }
 
     FILE *file = fopen("accounts.dat", "rb+");
-    if(!file){
+    if (!file) {
         printf("Error Opening File!!!\n");
         return;
     }
 
     Account acc;
     int found = 0;
-    while (fread(&acc, sizeof(Account), 1, file)){
-        if(acc.accountNumber == accountNumber){
+    while (fread(&acc, sizeof(Account), 1, file)) {
+        if (acc.accountNumber == accountNumber) {
             getAccountDetails(&acc);
             fseek(file, -(long)sizeof(Account), SEEK_CUR);
-            fwrite(file, sizeof(Account), 1, file);
+            fwrite(&acc, sizeof(Account), 1, file);
             found = 1;
             printf("Account Updated Successfully!!\n");
             break;
         }
     }
     fclose(file);
-    if(!found){
+    if (!found) {
         printf("Account not found!!\n");
     }
 }
 
-void menu(){
+// Main menu function
+void menu() {
     int choice;
-    do{
+    do {
         printf("1. Create Account\n");
         printf("2. View Account\n");
         printf("3. Delete Account\n");
-        printf("4. Upadte Account\n");
+        printf("4. Update Account\n");
         printf("5. Exit Program\n");
         printf("Enter your choice: \n");
         scanf("%d", &choice);
 
-        switch(choice){
+        switch (choice) {
             case 1: createAccount(); break;
             case 2: viewAccount(); break;
             case 3: deleteAccount(); break;
             case 4: updateAccount(); break;
-            case 5: printf("Exiting Program....\n");
+            case 5: printf("Exiting Program....\n"); break;
             default: printf("Invalid Choice, try again\n");
         }
-    } while(choice != 5);
+    } while (choice != 5);
 }
 
-int main(){
-    srand(time(NULL)); //Random Number Activate
+// Entry point of the program
+int main() {
+    srand(time(NULL)); // Seed random number generator
     menu();
     return 0;
 }
