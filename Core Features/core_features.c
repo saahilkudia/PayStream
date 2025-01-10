@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <conio.h>
 
 // Structure definition for Account
 typedef struct {
@@ -12,6 +13,26 @@ typedef struct {
     char password[20];
     double balance;
 } Account;
+
+// Function to show password as asterisks
+void getPassword(char *password, int maxLen) {
+    int index = 0;
+    char ch;
+    printf("Enter your Password: ");
+    while ((ch = getch()) != '\r') { // '\r' is Enter key
+        if (ch == '\b') { // Backspace
+            if (index > 0) {
+                printf("\b \b");
+                index--;
+            }
+        } else if (index < maxLen - 1) { // replace pass with asterisks
+            password[index++] = ch;
+            printf("*");
+        }
+    }
+    password[index] = '\0'; // Null-terminate the password
+    printf("\n");
+}
 
 // Function to generate a random account number
 int generateNum() {
@@ -39,22 +60,27 @@ void getAccountDetails(Account *newAccount) {
     printf("Enter your Full Name: ");
     getchar(); // Clear the buffer
     fgets(newAccount->name, 50, stdin);
-    strtok(newAccount->name, "\n"); 
+    strtok(newAccount->name, "\n");
 
     printf("Enter your E-mail: ");
     fgets(newAccount->email, 50, stdin);
-    strtok(newAccount->email, "\n"); 
+    strtok(newAccount->email, "\n");
 
     printf("Enter Account Type: ");
     scanf("%s", newAccount->accountType);
 
-    printf("Enter your initial balance: ");
-    scanf("%lf", &newAccount->balance);
+    do {
+        printf("Enter your Initial Balance: ");
+        scanf("%lf", &newAccount->balance);
+        if (newAccount->balance < 0) {
+            printf("Balance cannot be negative!! Please Try Again\n");
+        } else if (newAccount->balance < 100) {
+            printf("Minimum Balance should be atleast 100!! Please Try Again\n");
+        }
+    } while (newAccount->balance < 100);
 
-    printf("Enter your Password: ");
-    getchar();
-    fgets(newAccount->password, 20, stdin);
-    strtok(newAccount->password, "\n"); 
+    // Password Input
+    getPassword(newAccount->password, 20);
 }
 
 // Function to create an account
@@ -66,14 +92,6 @@ void createAccount() {
         return;
     }
 
-    // Generate a unique account number
-    do {
-        newAccount.accountNumber = generateNum();
-    } while (doesAccountExist(newAccount.accountNumber));
-
-    printf("Account Number Generated: %d\n", newAccount.accountNumber);
-    getAccountDetails(&newAccount);
-
     // Validate balance
     if (newAccount.balance < 0) {
         printf("Balance cannot be negative\n");
@@ -81,13 +99,23 @@ void createAccount() {
         return;
     }
 
+    getAccountDetails(&newAccount);
+
+    // Generate a unique account number
+    do {
+        newAccount.accountNumber = generateNum();
+    } while (doesAccountExist(newAccount.accountNumber));
+
+    printf("Account Number Generated: %d\n", newAccount.accountNumber);
+
     // Write account data to file
     fwrite(&newAccount, sizeof(Account), 1, file);
     fclose(file);
     printf("Account Created Successfully!!\n");
+    printf(" \n");
 }
 
-// Function to authenticate a user
+// Function to authenticate a user with a maximum of 3 attempts
 int authenticateUser(int accountNumber, char *enteredPassword) {
     FILE *file = fopen("accounts.dat", "rb");
     if (!file) {
@@ -96,14 +124,30 @@ int authenticateUser(int accountNumber, char *enteredPassword) {
     }
 
     Account acc;
-    while (fread(&acc, sizeof(Account), 1, file)) {
-        if (acc.accountNumber == accountNumber && strcmp(acc.password, enteredPassword) == 0) {
-            fclose(file);
-            return 1;
+    int attempts = 0;
+
+    while (attempts < 3) {
+        rewind(file); // Reset file pointer for each attempt
+        int isAuthenticated = 0;
+
+        while (fread(&acc, sizeof(Account), 1, file)) {
+            if (acc.accountNumber == accountNumber && strcmp(acc.password, enteredPassword) == 0) {
+                fclose(file);
+                return 1; // Successful authentication
+            }
+        }
+
+        // If not authenticated
+        attempts++;
+        if (attempts < 5) {
+            printf("Invalid credentials. Attempts remaining: %d\n", 3 - attempts);
+            getPassword(enteredPassword, 20);
         }
     }
+
     fclose(file);
-    return 0;
+    printf("Maximum login attempts reached. Access denied.\n");
+    return 0; // Authentication failed
 }
 
 // Function to delete an account
@@ -112,8 +156,7 @@ void deleteAccount() {
     char password[20];
     printf("Enter the Account Number to Delete: \n");
     scanf("%d", &accountNumber);
-    printf("Enter the Password: \n");
-    scanf("%s", password);
+    getPassword(password, 20);
 
     if (!authenticateUser(accountNumber, password)) {
         printf("Authentication Failed\n");
@@ -155,8 +198,7 @@ void viewAccount() {
     char password[20];
     printf("Enter Account Number: ");
     scanf("%d", &accountNumber);
-    printf("Enter Password: ");
-    scanf("%s", password);
+    getPassword(password, 20);
 
     if (!authenticateUser(accountNumber, password)) {
         printf("Authentication Failed!!!\n");
@@ -194,8 +236,7 @@ void updateAccount() {
     char password[20];
     printf("Enter Account Number to Update: ");
     scanf("%d", &accountNumber);
-    printf("Enter Password: ");
-    scanf("%s", password);
+    getPassword(password, 20);
 
     if (!authenticateUser(accountNumber, password)) {
         printf("Authentication Failed!!\n");
@@ -213,7 +254,7 @@ void updateAccount() {
     while (fread(&acc, sizeof(Account), 1, file)) {
         if (acc.accountNumber == accountNumber) {
             getAccountDetails(&acc);
-            fseek(file, -(long)sizeof(Account), SEEK_CUR);
+            fseek(file, -(long)sizeof(Account), SEEK_CUR); // from conio.h
             fwrite(&acc, sizeof(Account), 1, file);
             found = 1;
             printf("Account Updated Successfully!!\n");
@@ -226,32 +267,136 @@ void updateAccount() {
     }
 }
 
-// Main menu function
-void menu() {
-    int choice;
-    do {
-        printf("1. Create Account\n");
-        printf("2. View Account\n");
-        printf("3. Delete Account\n");
-        printf("4. Update Account\n");
-        printf("5. Exit Program\n");
-        printf("Enter your choice: \n");
-        scanf("%d", &choice);
+//function for transaction system
+void transaction_system() {
+    FILE *file;
+    Account acc;
+    int acc_number, found = 0;
 
-        switch (choice) {
-            case 1: createAccount(); break;
-            case 2: viewAccount(); break;
-            case 3: deleteAccount(); break;
-            case 4: updateAccount(); break;
-            case 5: printf("Exiting Program....\n"); break;
-            default: printf("Invalid Choice, try again\n");
+    printf("\n--- Transaction System ---\n");
+
+    // Input account number
+    printf("Enter Account Number: ");
+    scanf("%d", &acc_number);
+
+    char password[20];
+    getPassword(password, 20);
+
+    // Authenticate user
+    if (!authenticateUser(acc_number, password)) {
+        printf("Authentication Failed!!!\n");
+        return;
+    }
+
+    // Open file for reading and writing
+    file = fopen("accounts.dat", "rb+");
+    if (!file) {
+        printf("Error opening file!\n");
+        return;
+    }
+
+    // Search for the account
+    while (fread(&acc, sizeof(Account), 1, file)) {
+        if (acc.accountNumber == acc_number) {
+            found = 1;
+
+            int option;
+            float amount;
+
+            do {
+                printf("\n1. Withdraw\n2. Deposit\n3. Balance Inquiry\n4. Exit\n");
+                printf("Choose an option: ");
+                scanf("%d", &option);
+
+                switch (option) {
+                    case 1: // Withdraw
+                        printf("Enter amount to withdraw: ");
+                        scanf("%f", &amount);
+                        if (amount > 0 && amount <= acc.balance) {
+                            acc.balance -= amount;
+                            printf("Withdrawal successful! New balance: %.2f\n", acc.balance);
+                        } else {
+                            printf("Invalid amount! Either negative or exceeds balance.\n");
+                        }
+                        break;
+
+                    case 2: // Deposit
+                        printf("Enter amount to deposit: ");
+                        scanf("%f", &amount);
+                        if (amount > 0) {
+                            acc.balance += amount;
+                            printf("Deposit successful! New balance: %.2f\n", acc.balance);
+                        } else {
+                            printf("Invalid amount! Cannot deposit a negative value.\n");
+                        }
+                        break;
+
+                    case 3: // Balance Inquiry
+                        printf("Current balance: %.2f\n", acc.balance);
+                        break;
+
+                    case 4: // Exit
+                        printf("Exiting transaction system.\n");
+                        break;
+
+                    default:
+                        printf("Invalid option! Try again.\n");
+                        break;
+                }
+            } while (option != 4);
+
+            // Update the account in the file
+            fseek(file, -(long)sizeof(Account), SEEK_CUR);
+            fwrite(&acc, sizeof(Account), 1, file);
+            break;
         }
-    } while (choice != 5);
+    }
+
+    if (!found) {
+        printf("Account not found!\n");
+    }
+
+    fclose(file);
 }
 
-// Entry point of the program
+// Main Function
 int main() {
-    srand(time(NULL)); // Seed random number generator
-    menu();
+    srand(time(0)); // Seed the random number generator
+    int choice;
+    do {
+        printf("Welcome to the Banking System\n");
+        printf("1. Create Account\n");
+        printf("2. View Account\n");
+        printf("3. Update Account\n");
+        printf("4. Delete Account\n");
+        printf("5. Transaction System\n");
+        printf("6. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        switch (choice) {
+            case 1:
+                createAccount();
+                break;
+            case 2:
+                viewAccount();
+                break;
+            case 3:
+                updateAccount();
+                break;
+            case 4:
+                deleteAccount();
+                break;
+            case 5:
+                transaction_system();
+                break;
+            case 6:
+                printf("Thank you for using the Banking System\n");
+                break;
+            default:
+                printf("Invalid Choice\n");
+                break;
+        }
+    } while (choice != 6);
+
     return 0;
 }
